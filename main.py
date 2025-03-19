@@ -44,6 +44,9 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+# === 1. Ladda in miljövariabler från .env ===
+load_dotenv()
+
 def main():
     logging.info("🚀 AI Trading Bot startar...")
     try:
@@ -99,11 +102,12 @@ def main():
         generate_macro_event_impact_report(macro_data)
 
         # 7. Live Trading Signalering (Telegram)
-        #bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-        #chat_id = os.getenv("TELEGRAM_CHAT_ID")
-        #bearer_token = os.getenv("TWITTER_BEARER_TOKEN")  # ex. om du behöver Twitter
-        bot_token = "DIN_TELEGRAM_BOT_TOKEN"  # Lägg till riktig token
-        chat_id = "DIN_CHAT_ID"               # Lägg till riktigt chat-ID
+        # === Hämta tokens från .env via os.getenv ===
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        # Om du behöver Twitter:
+        bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
+
         live_signals = generate_trading_signals(macro_data) or []
 
         if bot_token and chat_id:
