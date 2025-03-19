@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+# Behåller alla imports från din gamla main.py
 from ai_decision_engine.execution_feedback import refine_trading_strategy
 from ai_decision_engine.optimal_entry_exit import optimal_entry_exit_strategy
 from ai_decision_engine.strategy_generation import generate_momentum_strategy
@@ -45,43 +46,46 @@ def main():
     logging.info("🚀 AI Trading Bot startar...")
     try:
         # 1. Hämta & bearbeta data
-        # Exempel: hämtar valutadata för USD/SEK
-        market_data = fetch_forex_data("USD", "SEK") or {}
+        # Uppdaterat: Hämtar en tidsserie (ex. en månad) för USD/SEK
+        market_data = fetch_forex_data("USD", "SEK", period="1mo") or {}
         portfolio_data = fetch_portfolio() or {}
         sentiment = analyze_sentiment() or {"sentiment": "neutral"}
         macro_data = fetch_macro_data() or {}
         news_sentiment = fetch_and_analyze_news("stock market") or {"sentiment": "neutral"}
 
-        # Säkerställ att market_data är en dictionary och har 'close'
-        # (fetch_forex_data returnerar t.ex. {"close": 10.25} eller None)
-        if not isinstance(market_data, dict) or "close" not in market_data:
-            logging.error("❌ 'close' saknas i market_data, kan ej fortsätta.")
+        # I nya fetch_forex_data() returneras {"history": <DataFrame>}
+        df = market_data.get("history")
+        if df is None or df.empty:
+            logging.error("❌ Ingen valutahistorik tillgänglig för USD/SEK, kan ej fortsätta.")
             return
 
         # 2. Förbered data för strategi
-        # Här är market_data["close"] en enstaka siffra om du hämtar valutakurs => man kan t.ex. göra en fiktiv lista
-        # Om du vill ha tidsserie, anpassa fetch_forex_data att returnera en historik istället.
-        # Nedan gör vi en "dummy" för demonstration:
-        close_series = [market_data["close"]]  # Exempel: en liten lista
-        normalized_data = min_max_normalization(close_series)
+        # Använd stängningskurser som tidsserie
+        close_series = df["Close"]  # Pandas Series med dagliga stängningskurser
 
-        # Beräkna volatilitet (ex. daily, men här har vi en kort fiktiv serie)
-        volatility = calculate_daily_volatility(close_series) or 0.0
+        # Normalisera (om 'min_max_normalization' förväntar sig en array/list)
+        normalized_data = min_max_normalization(close_series.values)
 
-        # 3. AI Beslutsfattande
-        strategy = generate_momentum_strategy(normalized_data, sentiment, macro_data) or {}
+        # Exempel på volatilitet med daily (kunde även anropa annual, men daily är i koden)
+        volatility = calculate_daily_volatility(close_series.values) or 0.0
+
+        # 3. AI-beslutsfattande
+        # generate_momentum_strategy() tar ofta en dict {"close": ...}, vi skickar in normaliserade data
+        strategy_input = {"close": normalized_data}
+        strategy = generate_momentum_strategy(strategy_input, sentiment, macro_data) or {}
         optimal_entry = optimal_entry_exit_strategy(strategy) or {}
         refined_strategy = refine_trading_strategy(optimal_entry) or {}
 
         # 4. Riskhantering
         stop_loss = adaptive_stop_loss(refined_strategy) or {"stop_loss": 0.0}
-        var_analysis = calculate_var(close_series) or 0.0
+        var_analysis = calculate_var(close_series.values) or 0.0
         monte_carlo_sim = monte_carlo_simulation(100000, 0.07, 0.2) or {}
 
         # 5. Portföljhantering
         if not isinstance(portfolio_data, dict):
             logging.error("❌ Fel: portfolio_data är ogiltig. Kan inte fortsätta med portföljhantering.")
             return
+
         rebalanced_portfolio = rebalancing(portfolio_data, refined_strategy) or {}
         hedging_plan = hedge_strategy(rebalanced_portfolio)
         if isinstance(hedging_plan, str):
@@ -89,14 +93,14 @@ def main():
 
         # 6. Generera rapporter
         generate_pdf_report(rebalanced_portfolio)
-        generate_weekly_market_report(market_data)
+        generate_weekly_market_report(macro_data)  # ev. market_data om rapporten behöver rådata
         generate_macro_event_impact_report(macro_data)
 
         # 7. Live Trading Signalering (Telegram)
         bot_token = "DIN_TELEGRAM_BOT_TOKEN"  # Lägg till riktig token
-        chat_id = "DIN_CHAT_ID"  # Lägg till riktigt chat-ID
-        live_signals = generate_trading_signals(market_data) or []
-        
+        chat_id = "DIN_CHAT_ID"               # Lägg till riktigt chat-ID
+        live_signals = generate_trading_signals(macro_data) or []
+
         if bot_token and chat_id:
             send_telegram_signal(bot_token, chat_id, "📢 Live Trading Signal", live_signals)
         else:
