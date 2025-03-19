@@ -33,31 +33,37 @@ def fetch_multiple_stocks(symbols):
             stock_prices[symbol] = price
     return stock_prices
 
-# Funktion för att hämta valutakurser från Yahoo Finance
-def fetch_forex_data(base_currency, quote_currency):
+# Funktion för att hämta valutakurser (tidsserie) från Yahoo Finance
+def fetch_forex_data(base_currency, quote_currency, period="1d"):
     """
-    Hämtar realtids växelkurs mellan två valutor, t.ex. USD/SEK från Yahoo Finance.
+    Hämtar en tidsserie för valutakursen mellan två valutor, t.ex. USD/SEK,
+    under en viss period (ex. '1d', '1mo', '3mo', '1y', etc.).
+    Returnerar en dict: {"history": DataFrame}.
+    Om data saknas => {"history": None}.
     """
     try:
         pair = f"{base_currency}{quote_currency}=X"
         stock = yf.Ticker(pair)
-        history = stock.history(period="1d")
-        if not history.empty:
-            latest_price = history["Close"].iloc[-1]
+        # Hämta hela historiken för angiven period.
+        # (interval="1d" ger daglig data, kan ändras till ex. "1h".)
+        history = stock.history(period=period, interval="1d")
+
+        if history.empty:
             logging.info(
-                f"[{datetime.now()}] 💱 Växelkurs {base_currency}/{quote_currency}: {latest_price}"
+                f"[{datetime.now()}] 💱 Växelkurs {base_currency}/{quote_currency} har ingen data för period={period}."
             )
-            return {"close": latest_price}
-        else:
-            logging.info(
-                f"[{datetime.now()}] 💱 Växelkurs {base_currency}/{quote_currency}: None"
-            )
-            return {"close": None}
+            return {"history": None}
+
+        latest_price = history["Close"].iloc[-1]
+        logging.info(
+            f"[{datetime.now()}] 💱 Hämtade {base_currency}/{quote_currency} tidsserie för {period}, senast: {latest_price}"
+        )
+        return {"history": history}
     except Exception as e:
         logging.error(
-            f"[{datetime.now()}] ❌ Fel vid hämtning av växelkurs {base_currency}/{quote_currency}: {str(e)}"
+            f"[{datetime.now()}] ❌ Fel vid hämtning av {base_currency}/{quote_currency} (period={period}): {str(e)}"
         )
-        return None
+        return {"history": None}
 
 # Funktion för att hämta råvarupriser från Yahoo Finance
 def fetch_commodity_price(commodity):
@@ -170,18 +176,14 @@ def fetch_most_traded_stocks(index_ticker):
         return []
 
 if __name__ == "__main__":
-    # Exempelanrop för aktier
-    aktier = ["AAPL", "TSLA", "NVDA"]
-    priser = fetch_multiple_stocks(aktier)
-    print(f"📈 Senaste aktiepriser: {priser}")
+    # Exempelanrop för valutahistorik 1 månad
+    forex_ts = fetch_forex_data("USD", "SEK", period="1mo")
+    print("Valutahistorik (USD/SEK) 1mo:", forex_ts.get("history"))
 
     # Exempelanrop för undervärderade aktier
     undervalued_stocks = scan_market()
     print(f"📊 Undervärderade aktier: {undervalued_stocks}")
 
-    # Exempelanrop för de mest omsatta aktierna på OMX (kan vara '^OMX' eller '^OMX30'
-    # OBS: Ibland saknas data beroende på hur Yahoo Finance definierar index.options
-    # Du kan testa '^GSPC' (S&P 500) eller '^GDAXI' (DAX) också.
-
+    # Exempelanrop för de mest omsatta aktierna på OMX
     omx_most_traded = fetch_most_traded_stocks('^OMX')
     print(f"🔥 Mest omsatta på OMX: {omx_most_traded}")
