@@ -1,62 +1,62 @@
 # ================================
-# Formatterings- och linting-verktyg
+# Formatterings- och Linting-verktyg
 # ================================
-black
-isort
-autoflake
-flake8
-pylint
+black           # Kodformatering
+isort           # Sortering av imports
+autoflake       # Ta bort oanvända imports/variabler automatiskt
+flake8          # Linting av Python-kod
+pylint          # Ytterligare linting
 
 # ================================
-# Databehandling & analys
+# Databehandling & Analys
 # ================================
-pandas
-numpy
-scikit-learn
-tensorflow
-requests
-textblob
-gspread
-oauth2client
-yfinance
-matplotlib
-seaborn
-fpdf
-psutil
-python-dotenv
-schedule
+pandas          # DataFrames, analys
+numpy           # Numeriska beräkningar
+scikit-learn    # Bas-ML & datahantering
+tensorflow      # (OBS) Endast om du använder TF i AI-lärning
+requests        # HTTP-anrop (APIer)
+textblob        # Enkel sentimentanalys
+gspread         # Google Sheets-integration
+oauth2client    # OAuth2 för Google
+yfinance        # Yahoo Finance-data
+matplotlib      # Plot/bilder
+seaborn         # Statistikvisualisering
+fpdf            # Generera PDF-rapporter
+psutil          # Systeminfo, processhantering
+python-dotenv   # Ladda variabler från .env
+schedule        # Schemaläggning av tasks (cron-liknande)
 
 # ================================
 # Maskininlärning & RL
 # ================================
-gym
-stable_baselines3
-scipy
+gym             # Reinforcement Learning-environment
+stable_baselines3  # Ex. PPO, DQN m.m. för RL
+scipy           # Vetenskapliga beräkningar
 
 # ================================
-# Ytterligare beroenden från tidigare diskussioner
+# Tillägg för Transformers/PyTorch
 # ================================
-# (Om du enbart kör Transformers med PyTorch, kan du avinstallera TensorFlow.)
+# (Om du enbart kör Transformers i PyTorch-läge kan du överväga att ta bort tensorflow.)
 torch           # PyTorch
-transformers    # Hugging Face Transformers
+transformers    # Hugging Face Transformers (NLP, sentiment m.m.)
 
 # ================================
 # Tidsserieprognoser
 # ================================
 prophet         # Nyare namnet på fbprophet
-# (Om installation av 'prophet' krånglar i Python 3.12 => överväg att byta till Python 3.10/3.11)
+# OBS: Kan strula på Python 3.12. Rek. Python 3.10/3.11.
 
 # ================================
 # Realtidsdata via WebSockets
 # ================================
-websockets
+websockets      # ex. `wss://`, asynkrona anrop
 
 # ================================
 # Interaktiv Dashboard
 # ================================
-streamlit
+streamlit       # Bygg en webbaserad UI för rapporter/mätvärden
 
 # ================================
-# Valbar: Portföljoptimering (PyPortfolioOpt)
+# (Valbar) Portföljoptimering
 # ================================
-# pypfopt
+# pypfopt       # Modern Portfolio Theory, Sharpe, riskmodeller m.m.
