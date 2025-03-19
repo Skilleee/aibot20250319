@@ -97,6 +97,9 @@ def main():
         generate_macro_event_impact_report(macro_data)
 
         # 7. Live Trading Signalering (Telegram)
+        #bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        #chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        #bearer_token = os.getenv("TWITTER_BEARER_TOKEN")  # ex. om du behöver Twitter
         bot_token = "DIN_TELEGRAM_BOT_TOKEN"  # Lägg till riktig token
         chat_id = "DIN_CHAT_ID"               # Lägg till riktigt chat-ID
         live_signals = generate_trading_signals(macro_data) or []
