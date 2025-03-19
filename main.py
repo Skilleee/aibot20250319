@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 import logging
 from datetime import datetime
+import pandas as pd
+import numpy as np
 
 # Behåller alla imports från din gamla main.py
 from ai_decision_engine.execution_feedback import refine_trading_strategy
@@ -37,6 +39,11 @@ from risk_management.value_at_risk import calculate_var
 from utils.bot_scheduler import trading_routine, schedule_tasks
 from utils.process_manager import manage_processes
 
+# --- Ny import för att ladda RL-modellen ---
+from stable_baselines3 import PPO
+# Om du vill backtesta RL i main, importera ex. backtest_rl_agent
+# from ai_learning.backtest_rl import backtest_rl_agent
+
 # Konfigurera loggning
 logging.basicConfig(
     filename="ai_trading_bot.log",
@@ -49,9 +56,18 @@ load_dotenv()
 
 def main():
     logging.info("🚀 AI Trading Bot startar...")
+
+    # 0. Försök ladda en redan tränad RL-modell (om existerar)
+    rl_model = None
+    try:
+        rl_model = PPO.load("rl_trading_model.zip")
+        logging.info("✅ RL-modell (PPO) laddad från rl_trading_model.zip")
+    except Exception as e:
+        logging.warning(f"⚠️ Ingen RL-modell hittad eller kunde ej laddas: {str(e)}")
+
     try:
         # 1. Hämta & bearbeta data
-        # Uppdaterat: Hämtar en tidsserie (ex. en månad) för USD/SEK
+        #    Hämtar en tidsserie (ex. en månad) för USD/SEK
         market_data = fetch_forex_data("USD", "SEK", period="1mo") or {}
         portfolio_data = fetch_portfolio() or {}
         sentiment = analyze_sentiment() or {"sentiment": "neutral"}
@@ -61,25 +77,42 @@ def main():
         # I nya fetch_forex_data() returneras {"history": <DataFrame>}
         df = market_data.get("history")
         if df is None or df.empty:
-            logging.error("❌ Ingen valutahistorik tillgänglig för USD/SEK, kan ej fortsätta.")
+            logging.error("❌ Ingen valutahistorik för USD/SEK, kan ej fortsätta.")
             return
 
         # 2. Förbered data för strategi
-        # Använd stängningskurser som tidsserie
         close_series = df["Close"]  # Pandas Series med dagliga stängningskurser
-
-        # Normalisera (om 'min_max_normalization' förväntar sig en array/list)
         normalized_data = min_max_normalization(close_series.values)
-
-        # Exempel på volatilitet med daily (kunde även anropa annual, men daily är i koden)
         volatility = calculate_daily_volatility(close_series.values) or 0.0
 
-        # 3. AI-beslutsfattande
-        # generate_momentum_strategy() tar ofta en dict {"close": ...}, vi skickar in normaliserade data
+        # 3. AI-beslutsfattande (klassiskt momentum + optional RL)
+        # -------------------------------------------------------
+        # a) Generera klassiska strategier (momentum, etc.)
         strategy_input = {"close": normalized_data}
         strategy = generate_momentum_strategy(strategy_input, sentiment, macro_data) or {}
         optimal_entry = optimal_entry_exit_strategy(strategy) or {}
         refined_strategy = refine_trading_strategy(optimal_entry) or {}
+
+        # b) Om vi har RL-modell => generera RL-action
+        #    Ex: Skapa en observation (pris, momentum, etc.) i en array
+        #    Nedan är en enkel exempellösning
+        rl_action = None
+        if rl_model is not None:
+            # Ex. observation [close, momentum, volume, balance, holding] (beroende på environment)
+            # Här har vi inte balance/holding i main, men vi kan fejk-lägga in 0.0
+            last_row = df.iloc[-1]
+            obs = np.array([
+                last_row["Close"],
+                last_row.get("momentum", 0.0),
+                last_row.get("volume", 500.0),
+                10000.0,   # Ex. balance
+                0.0        # holding
+            ], dtype=np.float32)
+
+            action, _ = rl_model.predict(obs, deterministic=True)
+            # 0=HOLD, 1=BUY, 2=SELL (beroende på hur du definierade i TradingEnv)
+            rl_action = action
+            logging.info(f"RL-agent föreslår action: {rl_action}")
 
         # 4. Riskhantering
         stop_loss = adaptive_stop_loss(refined_strategy) or {"stop_loss": 0.0}
@@ -98,17 +131,21 @@ def main():
 
         # 6. Generera rapporter
         generate_pdf_report(rebalanced_portfolio)
-        generate_weekly_market_report(macro_data)  # ev. market_data om rapporten behöver rådata
+        generate_weekly_market_report(macro_data)
         generate_macro_event_impact_report(macro_data)
 
         # 7. Live Trading Signalering (Telegram)
-        # === Hämta tokens från .env via os.getenv ===
         bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT_ID")
-        # Om du behöver Twitter:
         bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
 
         live_signals = generate_trading_signals(macro_data) or []
+
+        # Om RL action finns => du kan logga/skicka meddelande om det
+        if rl_action is not None:
+            # T.ex. 0=HOLD, 1=BUY, 2=SELL => skicka med i "live_signals"
+            rl_msg = f"RL-agent action: {rl_action}"
+            live_signals.append(rl_msg)
 
         if bot_token and chat_id:
             send_telegram_signal(bot_token, chat_id, "📢 Live Trading Signal", live_signals)
@@ -120,8 +157,10 @@ def main():
         manage_processes()
 
         logging.info("✅ AI Trading Bot körs och analyserar marknaden.")
+
     except Exception as e:
         logging.error(f"❌ Fel i main(): {str(e)}")
+
 
 if __name__ == "__main__":
     main()
