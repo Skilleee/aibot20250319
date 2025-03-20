@@ -36,7 +36,6 @@ scipy           # Vetenskapliga beräkningar
 # ================================
 # Tillägg för Transformers/PyTorch
 # ================================
-# (Om du enbart kör Transformers i PyTorch-läge kan du överväga att ta bort tensorflow.)
 torch           # PyTorch
 transformers    # Hugging Face Transformers (NLP, sentiment m.m.)
 
