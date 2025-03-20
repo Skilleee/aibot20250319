@@ -51,7 +51,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# === 1. Ladda in miljövariabler från .env ===
+# === Ladda in miljövariabler från .env ===
 load_dotenv()
 
 def main():
@@ -98,8 +98,8 @@ def main():
         #    Nedan är en enkel exempellösning
         rl_action = None
         if rl_model is not None:
-            # Ex. observation [close, momentum, volume, balance, holding] (beroende på environment)
-            # Här har vi inte balance/holding i main, men vi kan fejk-lägga in 0.0
+            # Ex. observation [close, momentum, volume, balance, holding]
+            # Här har vi inte balance/holding i main, men vi fejk-lägger in 10000.0 respektive 0.0
             last_row = df.iloc[-1]
             obs = np.array([
                 last_row["Close"],
@@ -110,7 +110,7 @@ def main():
             ], dtype=np.float32)
 
             action, _ = rl_model.predict(obs, deterministic=True)
-            # 0=HOLD, 1=BUY, 2=SELL (beroende på hur du definierade i TradingEnv)
+            # 0=HOLD, 1=BUY, 2=SELL (beroende på hur du definierat i TradingEnv)
             rl_action = action
             logging.info(f"RL-agent föreslår action: {rl_action}")
 
@@ -141,9 +141,8 @@ def main():
 
         live_signals = generate_trading_signals(macro_data) or []
 
-        # Om RL action finns => du kan logga/skicka meddelande om det
+        # Om RL action finns => logga och inkludera den i "live_signals"
         if rl_action is not None:
-            # T.ex. 0=HOLD, 1=BUY, 2=SELL => skicka med i "live_signals"
             rl_msg = f"RL-agent action: {rl_action}"
             live_signals.append(rl_msg)
 
