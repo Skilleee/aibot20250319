@@ -1,4 +1,4 @@
-#python -m unittest test_main.py
+# python -m unittest test_main.py
 
 import unittest
 import time
@@ -28,7 +28,7 @@ from utils.process_manager import manage_processes
 # Nya importer för RL-tester
 try:
     from ai_learning.reinforcement_learning import TradingEnv
-    from ai_learning.train_rl import train_rl_trading_agent
+    from ai_learning.trading_rl_agent import train_rl_trading_agent
     RL_AVAILABLE = True
 except ImportError:
     RL_AVAILABLE = False
@@ -55,7 +55,6 @@ class TestTradingBot(unittest.TestCase):
         texts = ["The market is bullish", "The market is bearish"]
         sentiment = analyze_sentiment(texts)
         if isinstance(sentiment, str):
-            # Om funktionen returnerar en ren sträng, slå in den i en dict
             sentiment = {"sentiment": sentiment}
         self.assertIsInstance(sentiment, dict)
         self.assertIn("sentiment", sentiment)
@@ -123,7 +122,6 @@ class TestTradingBot(unittest.TestCase):
         """Testar Monte Carlo-simulering för en hypotetisk avkastning."""
         sim = monte_carlo_simulation(100000, 0.07, 0.2)
         if isinstance(sim, float):
-            # Om funktionen enbart returnerar ett numeriskt värde, packa in i en dict
             sim = {"simulation_result": sim}
         self.assertIsInstance(sim, dict)
 
@@ -134,7 +132,7 @@ class TestTradingBot(unittest.TestCase):
         self.assertIsInstance(rebalanced_portfolio, dict)
 
     def test_hedge_strategy(self):
-        """Testar hedgestrategi för en enkel portfölj.""" 
+        """Testar hedgestrategi för en enkel portfölj."""
         portfolio = {"AAPL": 50, "GOOGL": 50}
         hedging_plan = hedge_strategy(portfolio)
         if isinstance(hedging_plan, str):
@@ -214,13 +212,13 @@ class TestTradingBot(unittest.TestCase):
         self.assertIsInstance(done, bool, "Done bör vara en bool.")
         self.assertTrue(steps <= 49, "Testet bör inte loopa mer än 49 steps för 50 datapunkter.")
 
-    @unittest.skipUnless(RL_AVAILABLE, "RL (train_rl) saknas eller kan ej importeras.")
+    @unittest.skipUnless(RL_AVAILABLE, "RL (trading_rl_agent) saknas eller kan ej importeras.")
     def test_train_rl_trading_agent(self):
         """
         Testar om vi kan köra en enkel RL-träning (train_rl_trading_agent) utan krasch.
         Skapar en liten DataFrame, tränar några steg, och kollar om en modell-fil skapats.
         """
-        from ai_learning.train_rl import train_rl_trading_agent
+        from ai_learning.trading_rl_agent import train_rl_trading_agent
         import pandas as pd
         import numpy as np
 
