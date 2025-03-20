@@ -18,27 +18,43 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-def train_rl_trading_agent(df: pd.DataFrame, timesteps=100_000, model_path="rl_trading_model.zip"):
+def train_rl_trading_agent(df: pd.DataFrame, timesteps: int = 100_000, model_path: str = "rl_trading_model.zip"):
     """
-    df: DataFrame med kolumner "close", "momentum", "volume", etc.
-    timesteps: antal timesteps att träna RL-agenten
-    model_path: filnamn för att spara den tränade modellen
+    Tränar en RL-agent med PPO-algoritmen på TradingEnv.
+    
+    Args:
+        df (pd.DataFrame): DataFrame med kolumnerna "close", "momentum", "volume" (och eventuellt "return").
+        timesteps (int): Antal timesteps att träna RL-agenten.
+        model_path (str): Sökväg för att spara den tränade modellen.
+        
+    Returns:
+        PPO: Den tränade modellen.
     """
-
     def make_env():
         return TradingEnv(df=df)
 
+    # Skapa en vektoriserad miljö med DummyVecEnv
     env = DummyVecEnv([make_env])
+    
+    # Initiera PPO-modellen
     model = PPO("MlpPolicy", env, verbose=1)
     logging.info(f"Startar RL-träning i {timesteps} steg...")
-
+    
+    # Träna modellen
     model.learn(total_timesteps=timesteps)
+    
+    # Spara den tränade modellen
     model.save(model_path)
     logging.info(f"✅ RL-modell tränad och sparad till {model_path}")
+    
+    # Stäng miljön för att frigöra resurser
+    env.close()
+    
+    return model
 
 if __name__ == "__main__":
     # Exempel: Ladda historisk data
-    # (Byt ut mot riktig data. Du kan t.ex. hämta via fetch_forex_data eller fetch_multiple_stocks och göra en DataFrame.)
+    # Se till att data har rätt kolumnnamn (t.ex. "close", "momentum", "volume")
     df = pd.DataFrame({
         "close": [101, 102, 103, 104, 105],
         "momentum": [0.1, -0.2, 0.05, 0.3, -0.1],
